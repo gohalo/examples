@@ -48,7 +48,7 @@ func slogContext() {
 
 	// time=2026-01-23T22:56:18.521+08:00 level=INFO msg="Hello World!!!" foo=bar
 	logging = logger.With(slog.String("foo", "bar"))
-	logging.Info("Hello World!!!")
+	logging.Info("Hello World!!!", "name", "andy")
 
 	// time=2026-01-23T22:56:18.521+08:00 level=INFO msg="Hello World!!!" properties.hey.height=10
 	logging = logger.WithGroup("properties").WithGroup("hey")
