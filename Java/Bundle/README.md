@@ -39,6 +39,7 @@ mvn -pl doris-jdbc -am clean package
 
 ```bash
 mvn -pl doris-jdbc compile exec:java
+mvn -pl doris-jdbc compile exec:exec
 ```
 
 ## 新增示例模块

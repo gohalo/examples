@@ -4,4 +4,6 @@ func main() {
 	header()
 	simple()
 	translation()
+	structure()
+	custom()
 }

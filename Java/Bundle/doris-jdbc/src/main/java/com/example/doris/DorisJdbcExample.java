@@ -18,10 +18,14 @@ import java.sql.Statement;
 public class DorisJdbcExample {
 
     // 多个 FE 节点用逗号分隔，实现客户端侧的高可用切换
-    private static final String FE_HOSTS = "10.175.66.124:9030,10.175.82.186:9030";
     private static final String DATABASE = "information_schema";
-    private static final String USER = "root";
-    private static final String PASSWORD = "YourPassword";
+    // private static final String FE_HOSTS = "10.175.66.124:9030,10.175.82.186:9030";
+    // private static final String USER = "root";
+    // private static final String PASSWORD = "YourPassword";
+
+    private static final String FE_HOSTS = "music-doris-das.service.gy.ntes:4306";
+    private static final String USER = "copyright";
+    private static final String PASSWORD = "sK9pR7xQ";
 
     // 10 GiB = 10 * 1024 * 1024 * 1024 = 10737418240
     private static final long EXEC_MEM_LIMIT = 10737418240L;
@@ -32,6 +36,8 @@ public class DorisJdbcExample {
                 "jdbc:mysql://%s/%s"
                         + "?useSSL=false"
                         + "&useUnicode=true"
+                        + "&queryTimeoutKillsConnection=false"
+                        + "&connectionAttributes=datasource:doris.youdata,proxy_user:youdata_wo_priv,query_timeout:10000"
                         + "&characterEncoding=UTF-8"
                         + "&connectTimeout=5000"
                         + "&socketTimeout=60000"
@@ -39,7 +45,6 @@ public class DorisJdbcExample {
                 FE_HOSTS, DATABASE, EXEC_MEM_LIMIT);
 
         System.out.println("JDBC URL: " + jdbcUrl);
-
         try {
             // MySQL Connector/J 8.x 会自动注册驱动，这里显式加载仅为兼容旧版本
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -50,7 +55,8 @@ public class DorisJdbcExample {
         }
 
         try (Connection conn = DriverManager.getConnection(jdbcUrl, USER, PASSWORD);
-             Statement stmt = conn.createStatement()) {
+            Statement stmt = conn.createStatement()) {
+            stmt.setQueryTimeout(1);
 
             // 也可以在此显式再设置一次，确保生效
             stmt.execute("SET exec_mem_limit=" + EXEC_MEM_LIMIT);
@@ -63,13 +69,24 @@ public class DorisJdbcExample {
                 }
             }
 
-            // 一条简单查询作为示例
-            try (ResultSet rs = stmt.executeQuery("SELECT CURRENT_TIMESTAMP() AS now, VERSION() AS version")) {
+            // 执行 SLEEP 函数：让查询在服务端阻塞若干秒，可用于观察 query_timeout 是否生效
+            long sleepSeconds = 2;
+            long beforeSleep = System.currentTimeMillis();
+            try (ResultSet rs = stmt.executeQuery("SELECT SLEEP(" + sleepSeconds + ")")) {
                 while (rs.next()) {
-                    System.out.printf("Doris now=%s, version=%s%n",
-                            rs.getString("now"), rs.getString("version"));
+                    System.out.printf("SLEEP(%d) returned %s, elapsed %d ms%n",
+                            sleepSeconds, rs.getString(1),
+                            System.currentTimeMillis() - beforeSleep);
                 }
             }
+
+            // 一条简单查询作为示例
+            // try (ResultSet rs = stmt.executeQuery("SELECT CURRENT_TIMESTAMP() AS now, VERSION() AS version")) {
+            //     while (rs.next()) {
+            //         System.out.printf("Doris now=%s, version=%s%n",
+            //                 rs.getString("now"), rs.getString("version"));
+            //     }
+            // }
         } catch (SQLException e) {
             System.err.println("访问 Doris 集群失败：" + e.getMessage());
             e.printStackTrace();

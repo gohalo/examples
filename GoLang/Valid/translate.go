@@ -23,7 +23,6 @@ func translation() {
 
 	en := en.New()
 	i18n := ut.New(en, en, zh.New()) // fallback and others
-
 	if trans, found := i18n.GetTranslator("zh"); found {
 		// Register translations for validator
 		if err := zhT.RegisterDefaultTranslations(validate, trans); err != nil {
