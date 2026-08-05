@@ -19,30 +19,32 @@ public class DorisJdbcExample {
 
     // 多个 FE 节点用逗号分隔，实现客户端侧的高可用切换
     private static final String DATABASE = "information_schema";
-    // private static final String FE_HOSTS = "10.175.66.124:9030,10.175.82.186:9030";
-    // private static final String USER = "root";
-    // private static final String PASSWORD = "YourPassword";
+    private static final String FE_HOSTS = "10.175.66.124:9030,10.175.82.186:9030";
+    private static final String USER = "root";
+    private static final String PASSWORD = "music_root";
 
-    private static final String FE_HOSTS = "music-doris-das.service.gy.ntes:4306";
-    private static final String USER = "copyright";
-    private static final String PASSWORD = "sK9pR7xQ";
+    // private static final String FE_HOSTS = "music-doris-das.service.gy.ntes:4306";
+    // private static final String USER = "copyright";
+    // private static final String PASSWORD = "sK9pR7xQ";
 
     // 10 GiB = 10 * 1024 * 1024 * 1024 = 10737418240
     private static final long EXEC_MEM_LIMIT = 10737418240L;
 
     public static void main(String[] args) {
         // 通过 sessionVariables 在连接建立时设置会话变量，等价于每次连接后执行 SET
-        String jdbcUrl = String.format(
-                "jdbc:mysql://%s/%s"
-                        + "?useSSL=false"
-                        + "&useUnicode=true"
-                        + "&queryTimeoutKillsConnection=false"
-                        + "&connectionAttributes=datasource:doris.youdata,proxy_user:youdata_wo_priv,query_timeout:10000"
-                        + "&characterEncoding=UTF-8"
-                        + "&connectTimeout=5000"
-                        + "&socketTimeout=60000"
-                        + "&sessionVariables=exec_mem_limit=%d",
-                FE_HOSTS, DATABASE, EXEC_MEM_LIMIT);
+        // String jdbcUrl = String.format(
+        //         "jdbc:mysql://%s/%s"
+        //                 + "?useSSL=false"
+        //                 + "&useUnicode=true"
+        //                 + "&queryTimeoutKillsConnection=false"
+        //                 + "&connectionAttributes=datasource:doris.youdata,proxy_user:youdata_wo_priv,query_timeout:10000"
+        //                 + "&characterEncoding=UTF-8"
+        //                 + "&connectTimeout=5000"
+        //                 + "&socketTimeout=60000"
+        //                 + "&sessionVariables=exec_mem_limit=%d,query_timeout=600",
+        //         FE_HOSTS, DATABASE, EXEC_MEM_LIMIT);
+
+        String jdbcUrl = "jdbc:mysql://10.175.73.210:9030/?useUnicode=true&characterEncoding=UTF-8&useInformationSchema=true&allowPublicKeyRetrieval=true&serverTimezone=GMT%2B8&allowMultiQueries=true&useOldAliasMetadataBehavior=true&sessionVariables=exec_mem_limit%3D10737418240%2Cquery_timeout%3D600";
 
         System.out.println("JDBC URL: " + jdbcUrl);
         try {
@@ -59,7 +61,7 @@ public class DorisJdbcExample {
             stmt.setQueryTimeout(1);
 
             // 也可以在此显式再设置一次，确保生效
-            stmt.execute("SET exec_mem_limit=" + EXEC_MEM_LIMIT);
+            // stmt.execute("SET exec_mem_limit=" + EXEC_MEM_LIMIT);
 
             // 验证会话变量是否已经设置成功
             try (ResultSet rs = stmt.executeQuery("SHOW VARIABLES LIKE 'exec_mem_limit'")) {
@@ -68,8 +70,15 @@ public class DorisJdbcExample {
                             rs.getString(1), rs.getString(2));
                 }
             }
+            try (ResultSet rs = stmt.executeQuery("SHOW VARIABLES LIKE 'query_timeout'")) {
+                while (rs.next()) {
+                    System.out.printf("Session variable %s = %s%n",
+                            rs.getString(1), rs.getString(2));
+                }
+            }
 
             // 执行 SLEEP 函数：让查询在服务端阻塞若干秒，可用于观察 query_timeout 是否生效
+/*
             long sleepSeconds = 2;
             long beforeSleep = System.currentTimeMillis();
             try (ResultSet rs = stmt.executeQuery("SELECT SLEEP(" + sleepSeconds + ")")) {
@@ -79,6 +88,7 @@ public class DorisJdbcExample {
                             System.currentTimeMillis() - beforeSleep);
                 }
             }
+*/
 
             // 一条简单查询作为示例
             // try (ResultSet rs = stmt.executeQuery("SELECT CURRENT_TIMESTAMP() AS now, VERSION() AS version")) {
